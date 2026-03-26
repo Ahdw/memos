@@ -20,6 +20,7 @@ import type { User } from "@/types/proto/api/v1/user_service_pb";
 import { buildCommentThreadTree, buildReplyTemplate, type ThreadCommentNode } from "@/utils/comment-thread";
 import { useTranslate } from "@/utils/i18n";
 import { isSuperUser } from "@/utils/user";
+import { MemoViewContext } from "./MemoView/MemoViewContext";
 import { useImagePreview } from "./MemoView/hooks";
 
 type Variant = "detail" | "preview";
@@ -74,6 +75,8 @@ const CommentReplyEditor = ({
     />
   </div>
 );
+
+const noop = () => {};
 
 const PreviewCommentCard = ({
   rootMemo,
@@ -179,6 +182,19 @@ const ThreadCommentCard = ({
       : undefined;
   const visualDepth = Math.min(node.depth, MAX_VISUAL_DEPTH);
   const referencedMemos = node.displayMemo.relations.filter((relation) => relation.type === MemoRelation_Type.REFERENCE);
+  const contextValue = {
+    memo: node.displayMemo,
+    creator,
+    currentUser,
+    parentPage: parentPage || "/",
+    isArchived: false,
+    readonly,
+    showBlurredContent: true,
+    blurred: false,
+    openEditor: noop,
+    toggleBlurVisibility: noop,
+    openPreview,
+  };
 
   if (isEditing) {
     return (
@@ -237,13 +253,15 @@ const ThreadCommentCard = ({
           </div>
         </div>
 
-        <div className="flex flex-col gap-3">
-          <MemoContent compact={false} content={node.displayContent} contentClassName="text-sm leading-6" />
-          <AttachmentListView attachments={node.memo.attachments} onImagePreview={openPreview} />
-          <RelationListView currentMemoName={node.memo.name} parentPage={parentPage} relations={referencedMemos} />
-          {node.memo.location && <LocationDisplayView location={node.memo.location} />}
-          <MemoReactionListView memo={node.memo} reactions={node.memo.reactions} />
-        </div>
+        <MemoViewContext.Provider value={contextValue}>
+          <div className="flex flex-col gap-3">
+            <MemoContent compact={false} content={node.displayContent} contentClassName="text-sm leading-6" />
+            <AttachmentListView attachments={node.memo.attachments} onImagePreview={openPreview} />
+            <RelationListView currentMemoName={node.memo.name} parentPage={parentPage} relations={referencedMemos} />
+            {node.memo.location && <LocationDisplayView location={node.memo.location} />}
+            <MemoReactionListView memo={node.memo} reactions={node.memo.reactions} />
+          </div>
+        </MemoViewContext.Provider>
 
         {isReplyOpen && (
           <CommentReplyEditor creator={creator} rootMemo={rootMemo} target={node} onConfirm={onCloseReply} onCancel={onCloseReply} />
