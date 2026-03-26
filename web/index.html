@@ -13,11 +13,94 @@
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <style>
+      #app-splash {
+        position: fixed;
+        inset: 0;
+        z-index: 9999;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background:
+          radial-gradient(circle at top, rgba(246, 193, 119, 0.24), transparent 36%),
+          linear-gradient(180deg, #faf9f5 0%, #f3efe5 100%);
+        opacity: 1;
+        transition: opacity 260ms ease, visibility 260ms ease;
+      }
+
+      #app-splash.app-splash-hidden {
+        opacity: 0;
+        visibility: hidden;
+        pointer-events: none;
+      }
+
+      #app-splash-card {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 14px;
+      }
+
+      #app-splash-logo {
+        width: 84px;
+        height: 84px;
+        object-fit: cover;
+        border-radius: 24px;
+        box-shadow: 0 20px 60px rgba(15, 23, 42, 0.12);
+        animation: splashPulse 1.6s ease-in-out infinite;
+      }
+
+      #app-splash-title {
+        font-size: 18px;
+        font-weight: 600;
+        letter-spacing: 0.02em;
+        color: #1f2937;
+      }
+
+      @keyframes splashPulse {
+        0%,
+        100% {
+          transform: scale(0.96);
+          opacity: 0.9;
+        }
+
+        50% {
+          transform: scale(1);
+          opacity: 1;
+        }
+      }
+    </style>
     <!-- memos.metadata.head -->
     <title>Memos</title>
   </head>
   <body class="text-base w-full min-h-svh">
+    <div id="app-splash" aria-hidden="true">
+      <div id="app-splash-card">
+        <img id="app-splash-logo" src="/full-logo.webp" alt="" />
+        <div id="app-splash-title">Memos</div>
+      </div>
+    </div>
     <div id="root" class="relative w-full min-h-full"></div>
+    <script>
+      (() => {
+        const STORAGE_KEY = "memos-splash-brand";
+        try {
+          const raw = localStorage.getItem(STORAGE_KEY);
+          if (!raw) return;
+          const cached = JSON.parse(raw);
+          if (cached?.logoUrl) {
+            const logo = document.getElementById("app-splash-logo");
+            if (logo) logo.setAttribute("src", cached.logoUrl);
+          }
+          if (cached?.title) {
+            const title = document.getElementById("app-splash-title");
+            if (title) title.textContent = cached.title;
+          }
+        } catch {
+          // Ignore localStorage read failures during splash bootstrap.
+        }
+      })();
+    </script>
     <script type="module" src="/src/main.tsx"></script>
     <!-- memos.metadata.body -->
   </body>

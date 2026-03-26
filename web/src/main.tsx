@@ -17,6 +17,7 @@ import { useTokenRefreshOnFocus } from "@/hooks/useTokenRefreshOnFocus";
 import { queryClient } from "@/lib/query-client";
 import router from "./router";
 import { applyLocaleEarly } from "./utils/i18n";
+import { dismissSplashScreen } from "./utils/splash-screen";
 import { applyThemeEarly } from "./utils/theme";
 
 // Apply theme and locale early to prevent flash
@@ -47,6 +48,12 @@ function AppInitializer({ children }: { children: React.ReactNode }) {
 
   // Live refresh: listen for memo changes via SSE and invalidate caches.
   useLiveMemoRefresh();
+
+  useEffect(() => {
+    if (authInitialized && instanceInitialized) {
+      dismissSplashScreen();
+    }
+  }, [authInitialized, instanceInitialized]);
 
   if (!authInitialized || !instanceInitialized) {
     return null;
