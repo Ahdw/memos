@@ -1,11 +1,9 @@
-import { BellIcon, EarthIcon, InfoIcon, LibraryIcon, PaperclipIcon, UserCircleIcon } from "lucide-react";
+import { EarthIcon, InfoIcon, LibraryIcon, PaperclipIcon, UserCircleIcon } from "lucide-react";
 import { NavLink } from "react-router-dom";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import useCurrentUser from "@/hooks/useCurrentUser";
-import { useNotifications } from "@/hooks/useUserQueries";
 import { cn } from "@/lib/utils";
 import { Routes } from "@/router";
-import { UserNotification_Status } from "@/types/proto/api/v1/user_service_pb";
 import { useTranslate } from "@/utils/i18n";
 import MemosLogo from "./MemosLogo";
 import UserMenu from "./UserMenu";
@@ -26,7 +24,6 @@ const Navigation = (props: Props) => {
   const { collapsed, className } = props;
   const t = useTranslate();
   const currentUser = useCurrentUser();
-  const { data: notifications = [] } = useNotifications();
 
   const homeNavLink: NavLinkItem = {
     id: "header-memos",
@@ -52,22 +49,6 @@ const Navigation = (props: Props) => {
     title: t("common.attachments"),
     icon: <PaperclipIcon className="w-6 h-auto shrink-0" />,
   };
-  const unreadCount = notifications.filter((n) => n.status === UserNotification_Status.UNREAD).length;
-  const inboxNavLink: NavLinkItem = {
-    id: "header-inbox",
-    path: Routes.INBOX,
-    title: t("common.inbox"),
-    icon: (
-      <div className="relative">
-        <BellIcon className="w-6 h-auto shrink-0" />
-        {unreadCount > 0 && (
-          <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 flex items-center justify-center bg-primary text-primary-foreground text-[10px] font-semibold rounded-full border-2 border-background">
-            {unreadCount > 99 ? "99+" : unreadCount}
-          </span>
-        )}
-      </div>
-    ),
-  };
   const signInNavLink: NavLinkItem = {
     id: "header-auth",
     path: Routes.AUTH,
@@ -75,10 +56,9 @@ const Navigation = (props: Props) => {
     icon: <UserCircleIcon className="w-6 h-auto shrink-0" />,
   };
 
-  const primaryNavLinks: NavLinkItem[] = currentUser
-    ? [homeNavLink, exploreNavLink, attachmentsNavLink, inboxNavLink]
+  const navLinks: NavLinkItem[] = currentUser
+    ? [homeNavLink, exploreNavLink, attachmentsNavLink]
     : [exploreNavLink, aboutNavLink, signInNavLink];
-  const inboxAriaLabel = unreadCount > 0 ? `${t("common.inbox")}, ${unreadCount} unread` : t("common.inbox");
 
   return (
     <header className={cn("w-full h-full overflow-auto flex flex-col justify-between items-start gap-4", className)}>
@@ -87,7 +67,7 @@ const Navigation = (props: Props) => {
           <MemosLogo collapsed={collapsed} />
         </NavLink>
         <TooltipProvider>
-          {primaryNavLinks.map((navLink) => (
+          {navLinks.map((navLink) => (
             <NavLink
               className={({ isActive }) =>
                 cn(
@@ -102,7 +82,6 @@ const Navigation = (props: Props) => {
               to={navLink.path}
               end={navLink.path === Routes.HOME}
               id={navLink.id}
-              aria-label={navLink.id === "header-inbox" ? inboxAriaLabel : undefined}
               viewTransition
             >
               {props.collapsed ? (
