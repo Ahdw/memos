@@ -1,12 +1,15 @@
 import { memo, useMemo, useRef, useState } from "react";
+import { useLocation } from "react-router-dom";
 import useCurrentUser from "@/hooks/useCurrentUser";
 import { useUser } from "@/hooks/useUserQueries";
 import { cn } from "@/lib/utils";
 import { State } from "@/types/proto/api/v1/common_pb";
+import { MemoRelation_Type } from "@/types/proto/api/v1/memo_service_pb";
 import { isSuperUser } from "@/utils/user";
 import MemoEditor from "../MemoEditor";
 import PreviewImageDialog from "../PreviewImageDialog";
 import { MemoBody, MemoHeader } from "./components";
+import MemoCommentThreadPreview from "./components/MemoCommentThreadPreview";
 import { MEMO_CARD_BASE_CLASSES } from "./constants";
 import { useImagePreview, useMemoActions, useMemoHandlers } from "./hooks";
 import { MemoViewContext } from "./MemoViewContext";
@@ -22,6 +25,11 @@ const MemoView: React.FC<MemoViewProps> = (props: MemoViewProps) => {
   const isArchived = memoData.state === State.ARCHIVED;
   const readonly = memoData.creator !== currentUser?.name && !isSuperUser(currentUser);
   const parentPage = parentPageProp || "/";
+  const location = useLocation();
+  const commentAmount = memoData.relations.filter(
+    (relation) => relation.type === MemoRelation_Type.COMMENT && relation.relatedMemo?.name === memoData.name,
+  ).length;
+  const showCommentPreview = !location.pathname.startsWith(`/${memoData.name}`) && commentAmount > 0;
 
   // NSFW content management: always blur content tagged with NSFW (case-insensitive)
   const [showNSFWContent, setShowNSFWContent] = useState(false);
@@ -69,32 +77,47 @@ const MemoView: React.FC<MemoViewProps> = (props: MemoViewProps) => {
     );
   }
 
+  const article = (
+    <article
+      className={cn(MEMO_CARD_BASE_CLASSES, showCommentPreview && "mb-0 rounded-b-none border-b-0", className)}
+      ref={cardRef}
+      tabIndex={readonly ? -1 : 0}
+    >
+      <MemoHeader
+        showCreator={props.showCreator}
+        showVisibility={props.showVisibility}
+        showPinned={props.showPinned}
+        onEdit={openEditor}
+        onGotoDetail={handleGotoMemoDetailPage}
+        onUnpin={unpinMemo}
+      />
+
+      <MemoBody
+        compact={props.compact}
+        onContentClick={handleMemoContentClick}
+        onContentDoubleClick={handleMemoContentDoubleClick}
+        onToggleNsfwVisibility={toggleNsfwVisibility}
+      />
+
+      <PreviewImageDialog
+        open={previewState.open}
+        onOpenChange={setPreviewOpen}
+        imgUrls={previewState.urls}
+        initialIndex={previewState.index}
+      />
+    </article>
+  );
+
   return (
     <MemoViewContext.Provider value={contextValue}>
-      <article className={cn(MEMO_CARD_BASE_CLASSES, className)} ref={cardRef} tabIndex={readonly ? -1 : 0}>
-        <MemoHeader
-          showCreator={props.showCreator}
-          showVisibility={props.showVisibility}
-          showPinned={props.showPinned}
-          onEdit={openEditor}
-          onGotoDetail={handleGotoMemoDetailPage}
-          onUnpin={unpinMemo}
-        />
-
-        <MemoBody
-          compact={props.compact}
-          onContentClick={handleMemoContentClick}
-          onContentDoubleClick={handleMemoContentDoubleClick}
-          onToggleNsfwVisibility={toggleNsfwVisibility}
-        />
-
-        <PreviewImageDialog
-          open={previewState.open}
-          onOpenChange={setPreviewOpen}
-          imgUrls={previewState.urls}
-          initialIndex={previewState.index}
-        />
-      </article>
+      {showCommentPreview ? (
+        <div className="w-full">
+          {article}
+          <MemoCommentThreadPreview />
+        </div>
+      ) : (
+        article
+      )}
     </MemoViewContext.Provider>
   );
 };

@@ -1,6 +1,6 @@
 import { ConnectError } from "@connectrpc/connect";
 import { ArrowUpLeftFromCircleIcon, MessageCircleIcon } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "react-hot-toast";
 import { Link, useLocation, useParams } from "react-router-dom";
 import { MemoDetailSidebar, MemoDetailSidebarDrawer } from "@/components/MemoDetailSidebar";
@@ -8,7 +8,7 @@ import MemoEditor from "@/components/MemoEditor";
 import MemoView from "@/components/MemoView";
 import MobileHeader from "@/components/MobileHeader";
 import { Button } from "@/components/ui/button";
-import { memoNamePrefix } from "@/helpers/resource-names";
+import { extractMemoIdFromName, memoNamePrefix } from "@/helpers/resource-names";
 import useCurrentUser from "@/hooks/useCurrentUser";
 import useMediaQuery from "@/hooks/useMediaQuery";
 import { useMemo, useMemoComments } from "@/hooks/useMemoQueries";
@@ -21,7 +21,7 @@ const MemoDetail = () => {
   const md = useMediaQuery("md");
   const params = useParams();
   const navigateTo = useNavigateTo();
-  const { state: locationState } = useLocation();
+  const { state: locationState, hash } = useLocation();
   const currentUser = useCurrentUser();
   const uid = params.uid;
   const memoName = `${memoNamePrefix}${uid}`;
@@ -48,6 +48,15 @@ const MemoDetail = () => {
   const comments = commentsResponse?.memos || [];
 
   const showCreateCommentButton = currentUser && !showCommentEditor;
+
+  useEffect(() => {
+    if (!hash || comments.length === 0) {
+      return;
+    }
+
+    const el = document.getElementById(hash.slice(1));
+    el?.scrollIntoView({ behavior: "smooth", block: "center" });
+  }, [hash, comments]);
 
   if (isLoading || !memo) {
     return null;
@@ -122,15 +131,27 @@ const MemoDetail = () => {
                       </Button>
                     )}
                   </div>
-                  {comments.map((comment) => (
-                    <MemoView
-                      key={`${comment.name}-${comment.displayTime}`}
-                      memo={comment}
-                      parentPage={locationState?.from}
-                      showCreator
-                      compact
-                    />
-                  ))}
+                  <div className="relative w-full pl-6">
+                    <div className="absolute bottom-4 left-3 top-1 w-px bg-border" />
+                    <div className="flex w-full flex-col gap-3">
+                      {comments.map((comment) => (
+                        <div
+                          className="relative w-full"
+                          id={extractMemoIdFromName(comment.name)}
+                          key={`${comment.name}-${comment.displayTime}`}
+                        >
+                          <span className="absolute -left-[1.05rem] top-6 h-3 w-3 rounded-full bg-primary ring-4 ring-background" />
+                          <MemoView
+                            className="mb-0 rounded-2xl border-border/80 bg-card/95 shadow-sm transition-all hover:shadow-md"
+                            memo={comment}
+                            parentPage={locationState?.from}
+                            showCreator
+                            compact
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
                 </>
               )}
             </div>
