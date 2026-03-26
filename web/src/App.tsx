@@ -6,6 +6,7 @@ import useNavigateTo from "./hooks/useNavigateTo";
 import { useUserLocale } from "./hooks/useUserLocale";
 import { useUserTheme } from "./hooks/useUserTheme";
 import { cleanupExpiredOAuthState } from "./utils/oauth";
+import { cacheSplashBrand } from "./utils/splash-screen";
 
 const App = () => {
   const navigateTo = useNavigateTo();
@@ -48,9 +49,14 @@ const App = () => {
   // Dynamic update metadata with customized profile
   useEffect(() => {
     if (!instanceGeneralSetting.customProfile) {
+      cacheSplashBrand();
+      document.title = "Memos";
+      const defaultIcon = document.querySelector("link[rel~='icon']") as HTMLLinkElement;
+      defaultIcon.href = "/logo.webp";
       return;
     }
 
+    cacheSplashBrand(instanceGeneralSetting.customProfile);
     document.title = instanceGeneralSetting.customProfile.title;
     const link = document.querySelector("link[rel~='icon']") as HTMLLinkElement;
     link.href = instanceGeneralSetting.customProfile.logoUrl || "/logo.webp";

@@ -16,6 +16,7 @@ import { useTokenRefreshOnFocus } from "@/hooks/useTokenRefreshOnFocus";
 import { queryClient } from "@/lib/query-client";
 import router from "./router";
 import { applyLocaleEarly } from "./utils/i18n";
+import { dismissSplashScreen } from "./utils/splash-screen";
 import { applyThemeEarly } from "./utils/theme";
 import "leaflet/dist/leaflet.css";
 import "katex/dist/katex.min.css";
@@ -45,6 +46,12 @@ function AppInitializer({ children }: { children: React.ReactNode }) {
   // Only enabled when user is authenticated
   // Related: https://github.com/usememos/memos/issues/5589
   useTokenRefreshOnFocus(refreshAccessToken, !!currentUser);
+
+  useEffect(() => {
+    if (authInitialized && instanceInitialized) {
+      dismissSplashScreen();
+    }
+  }, [authInitialized, instanceInitialized]);
 
   if (!authInitialized || !instanceInitialized) {
     return null;
