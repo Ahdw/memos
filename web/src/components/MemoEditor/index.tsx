@@ -37,6 +37,7 @@ const MemoEditor = (props: MemoEditorProps) => (
 const MemoEditorImpl: React.FC<MemoEditorProps> = ({
   className,
   cacheKey,
+  initialContent,
   memo,
   parentMemoName,
   autoFocus,
@@ -70,6 +71,7 @@ const MemoEditorImpl: React.FC<MemoEditorProps> = ({
     editorRef,
     memo,
     cacheKey,
+    initialContent,
     username: currentUser?.name ?? "",
     autoFocus,
     defaultVisibility,

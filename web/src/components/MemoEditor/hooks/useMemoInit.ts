@@ -8,6 +8,7 @@ interface UseMemoInitOptions {
   editorRef: React.RefObject<EditorRefActions | null>;
   memo?: Memo;
   cacheKey?: string;
+  initialContent?: string;
   username: string;
   autoFocus?: boolean;
   defaultVisibility?: Visibility;
@@ -18,6 +19,7 @@ export const useMemoInit = ({
   editorRef,
   memo,
   cacheKey,
+  initialContent,
   username,
   autoFocus,
   defaultVisibility,
@@ -40,6 +42,8 @@ export const useMemoInit = ({
       const cachedContent = cacheService.load(key);
       if (cachedContent) {
         dispatch(actions.updateContent(cachedContent));
+      } else if (initialContent) {
+        dispatch(actions.updateContent(initialContent));
       }
       if (defaultVisibility !== undefined) {
         dispatch(actions.setMetadata({ visibility: defaultVisibility }));
@@ -53,8 +57,9 @@ export const useMemoInit = ({
       setTimeout(() => editorRef.current?.focus(), 100);
     }
 
+
     setIsInitialized(true);
-  }, [memo, cacheKey, username, autoFocus, defaultVisibility, defaultCreateTime, actions, dispatch, editorRef]);
+  }, [memo, cacheKey, initialContent, username, autoFocus, defaultVisibility, defaultCreateTime, actions, dispatch, editorRef]);
 
   return { isInitialized };
 };

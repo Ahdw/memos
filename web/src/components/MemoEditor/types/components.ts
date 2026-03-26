@@ -8,6 +8,7 @@ export interface MemoEditorProps {
   className?: string;
   cacheKey?: string;
   placeholder?: string;
+  initialContent?: string;
   /** Existing memo to edit. When provided, the editor initializes from it without fetching. */
   memo?: Memo;
   parentMemoName?: string;
