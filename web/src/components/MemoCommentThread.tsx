@@ -12,6 +12,7 @@ import UserAvatar from "@/components/UserAvatar";
 import { Button } from "@/components/ui/button";
 import { extractMemoIdFromName } from "@/helpers/resource-names";
 import useCurrentUser from "@/hooks/useCurrentUser";
+import useMediaQuery from "@/hooks/useMediaQuery";
 import { useUsersByNames } from "@/hooks/useUserQueries";
 import i18n from "@/i18n";
 import { cn } from "@/lib/utils";
@@ -20,8 +21,8 @@ import type { User } from "@/types/proto/api/v1/user_service_pb";
 import { buildCommentThreadTree, buildReplyTemplate, type ThreadCommentNode } from "@/utils/comment-thread";
 import { useTranslate } from "@/utils/i18n";
 import { isSuperUser } from "@/utils/user";
-import { MemoViewContext } from "./MemoView/MemoViewContext";
 import { useImagePreview } from "./MemoView/hooks";
+import { MemoViewContext } from "./MemoView/MemoViewContext";
 
 type Variant = "detail" | "preview";
 
@@ -77,6 +78,7 @@ const CommentReplyEditor = ({
 );
 
 const noop = () => {};
+const PREVIEW_COLLAPSE_LENGTH = 220;
 
 const PreviewCommentCard = ({
   rootMemo,
@@ -89,6 +91,7 @@ const PreviewCommentCard = ({
   isReplyOpen,
   onReply,
   onCloseReply,
+  compactContent,
 }: {
   rootMemo: Memo;
   node: ThreadCommentNode;
@@ -100,12 +103,17 @@ const PreviewCommentCard = ({
   isReplyOpen: boolean;
   onReply: () => void;
   onCloseReply: () => void;
+  compactContent: boolean;
 }) => {
+  const t = useTranslate();
+  const [showFullContent, setShowFullContent] = useState(false);
   const displayTime = node.memo.displayTime
     ? timestampDate(node.memo.displayTime)
     : node.memo.createTime
       ? timestampDate(node.memo.createTime)
       : undefined;
+  const shouldCollapse =
+    compactContent && (node.displayContent.length > PREVIEW_COLLAPSE_LENGTH || node.displayContent.split(/\r?\n/).length > 4);
 
   return (
     <div className="rounded-2xl border border-border bg-background/80 px-3 py-3 shadow-xs">
@@ -140,7 +148,19 @@ const PreviewCommentCard = ({
               </Button>
             )}
           </div>
-          <p className="mt-2 whitespace-pre-wrap break-words text-sm text-foreground/90">{node.displayContent.trim() || "..."}</p>
+          <p
+            className={cn(
+              "mt-2 whitespace-pre-wrap break-words text-sm text-foreground/90",
+              shouldCollapse && !showFullContent && "line-clamp-4",
+            )}
+          >
+            {node.displayContent.trim() || "..."}
+          </p>
+          {shouldCollapse && (
+            <Button className="mt-2 h-7 px-2 text-xs" size="sm" variant="ghost" onClick={() => setShowFullContent((prev) => !prev)}>
+              {showFullContent ? t("common.collapse") : t("common.expand")}
+            </Button>
+          )}
         </div>
       </div>
       {isReplyOpen && (
@@ -160,6 +180,7 @@ const ThreadCommentCard = ({
   isReplyOpen,
   onReply,
   onCloseReply,
+  compactContent,
 }: {
   rootMemo: Memo;
   node: ThreadCommentNode;
@@ -170,6 +191,7 @@ const ThreadCommentCard = ({
   isReplyOpen: boolean;
   onReply: () => void;
   onCloseReply: () => void;
+  compactContent: boolean;
 }) => {
   const currentUser = useCurrentUser();
   const [isEditing, setIsEditing] = useState(false);
@@ -255,7 +277,7 @@ const ThreadCommentCard = ({
 
         <MemoViewContext.Provider value={contextValue}>
           <div className="flex flex-col gap-3">
-            <MemoContent compact={false} content={node.displayContent} contentClassName="text-sm leading-6" />
+            <MemoContent compact={compactContent} content={node.displayContent} contentClassName="text-sm leading-6" />
             <AttachmentListView attachments={node.memo.attachments} onImagePreview={openPreview} />
             <RelationListView currentMemoName={node.memo.name} parentPage={parentPage} relations={referencedMemos} />
             {node.memo.location && <LocationDisplayView location={node.memo.location} />}
@@ -285,6 +307,7 @@ const renderThreadNodes = ({
   parentPage,
   activeReplyMemoName,
   setActiveReplyMemoName,
+  compactContent,
 }: {
   nodes: ThreadCommentNode[];
   rootMemo: Memo;
@@ -292,6 +315,7 @@ const renderThreadNodes = ({
   parentPage?: string;
   activeReplyMemoName: string | null;
   setActiveReplyMemoName: (memoName: string | null) => void;
+  compactContent: boolean;
 }): JSX.Element[] =>
   nodes.map((node) => {
     const creator = creators?.get(node.memo.creator);
@@ -307,6 +331,7 @@ const renderThreadNodes = ({
           node={node}
           onCloseReply={() => setActiveReplyMemoName(null)}
           onReply={() => setActiveReplyMemoName(node.memo.name)}
+          compactContent={compactContent}
           parentPage={parentPage}
           replyingTo={replyingTo}
           rootMemo={rootMemo}
@@ -319,6 +344,7 @@ const renderThreadNodes = ({
             parentPage,
             activeReplyMemoName,
             setActiveReplyMemoName,
+            compactContent,
           })}
       </div>
     );
@@ -330,12 +356,14 @@ const MemoCommentThread = ({ memo, comments, parentPage, variant, previewCount =
   const [showRootEditor, setShowRootEditor] = useState(false);
   const [expanded, setExpanded] = useState(variant === "detail");
   const [activeReplyMemoName, setActiveReplyMemoName] = useState<string | null>(null);
+  const isDesktop = useMediaQuery("md");
   const { data: commentCreators } = useUsersByNames(comments.map((comment) => comment.creator));
 
   const thread = useMemo(() => buildCommentThreadTree(memo.name, comments), [memo.name, comments]);
   const previewNodes = useMemo(() => thread.ordered.slice(-previewCount), [thread.ordered, previewCount]);
   const previewNodeIds = useMemo(() => new Set(previewNodes.map((node) => node.memoId)), [previewNodes]);
   const canCreateComment = Boolean(currentUser);
+  const compactPreviewContent = variant === "preview" && !isDesktop;
 
   const showCreateButton = variant === "detail" && canCreateComment && !showRootEditor;
 
@@ -415,6 +443,7 @@ const MemoCommentThread = ({ memo, comments, parentPage, variant, previewCount =
                 node={node}
                 onCloseReply={() => setActiveReplyMemoName(null)}
                 onReply={() => setActiveReplyMemoName(node.memo.name)}
+                compactContent={compactPreviewContent}
                 parentHidden={Boolean(node.replyTo && !previewNodeIds.has(node.replyTo.memoId))}
                 parentPage={parentPage}
                 replyingTo={replyingTo}
@@ -432,6 +461,7 @@ const MemoCommentThread = ({ memo, comments, parentPage, variant, previewCount =
             parentPage,
             activeReplyMemoName,
             setActiveReplyMemoName,
+            compactContent: compactPreviewContent,
           })}
         </div>
       )}
