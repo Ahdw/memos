@@ -1,5 +1,6 @@
 import { timestampDate } from "@bufbuild/protobuf/wkt";
 import { ChevronDownIcon, ChevronUpIcon, CornerDownRightIcon, MessageCircleIcon } from "lucide-react";
+import type { JSX } from "react";
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import MemoActionMenu from "@/components/MemoActionMenu";
@@ -107,11 +108,7 @@ const PreviewCommentCard = ({
 }) => {
   const t = useTranslate();
   const [showFullContent, setShowFullContent] = useState(false);
-  const displayTime = node.memo.displayTime
-    ? timestampDate(node.memo.displayTime)
-    : node.memo.createTime
-      ? timestampDate(node.memo.createTime)
-      : undefined;
+  const displayTime = node.memo.createTime ? timestampDate(node.memo.createTime) : undefined;
   const shouldCollapse =
     compactContent && (node.displayContent.length > PREVIEW_COLLAPSE_LENGTH || node.displayContent.split(/\r?\n/).length > 4);
 
@@ -197,11 +194,7 @@ const ThreadCommentCard = ({
   const [isEditing, setIsEditing] = useState(false);
   const { previewState, openPreview, setPreviewOpen } = useImagePreview();
   const readonly = node.memo.creator !== currentUser?.name && !isSuperUser(currentUser);
-  const displayTime = node.memo.displayTime
-    ? timestampDate(node.memo.displayTime)
-    : node.memo.createTime
-      ? timestampDate(node.memo.createTime)
-      : undefined;
+  const displayTime = node.memo.createTime ? timestampDate(node.memo.createTime) : undefined;
   const visualDepth = Math.min(node.depth, MAX_VISUAL_DEPTH);
   const referencedMemos = node.displayMemo.relations.filter((relation) => relation.type === MemoRelation_Type.REFERENCE);
   const contextValue = {
@@ -209,6 +202,7 @@ const ThreadCommentCard = ({
     creator,
     currentUser,
     parentPage: parentPage || "/",
+    cardWidth: 0,
     isArchived: false,
     readonly,
     showBlurredContent: true,
@@ -291,7 +285,7 @@ const ThreadCommentCard = ({
       </div>
 
       <PreviewImageDialog
-        imgUrls={previewState.urls}
+        items={previewState.items}
         initialIndex={previewState.index}
         onOpenChange={setPreviewOpen}
         open={previewState.open}

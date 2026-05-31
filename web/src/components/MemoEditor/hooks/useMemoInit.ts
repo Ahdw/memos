@@ -57,7 +57,6 @@ export const useMemoInit = ({
       setTimeout(() => editorRef.current?.focus(), 100);
     }
 
-
     setIsInitialized(true);
   }, [memo, cacheKey, initialContent, username, autoFocus, defaultVisibility, defaultCreateTime, actions, dispatch, editorRef]);
 

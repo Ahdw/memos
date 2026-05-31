@@ -30,7 +30,7 @@ export interface ThreadCommentTree {
 }
 
 const getSortTime = (memo: Memo) => {
-  const ts = memo.displayTime ?? memo.createTime ?? memo.updateTime;
+  const ts = memo.createTime ?? memo.updateTime;
   if (!ts) {
     return 0;
   }
